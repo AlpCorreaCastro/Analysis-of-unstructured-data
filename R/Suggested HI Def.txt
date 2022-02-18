@@ -1,0 +1,35 @@
+SHI <- data["Suggested.HI.definition"]
+SHI_df <- data_frame(DefNr = 1:567, text = SHI)
+
+SHI_df %>% 
+    mutate_all(as.character) %>%  
+    unnest_tokens(output = token, input = text) %>% 
+    dplyr::filter(str_detect(token, "[a-z]")) -> SHI_long
+
+#5567 ist nr2. unnötige Zeilen entfernen
+SHIS <-subset(SHI_long, DefNr== 1)
+
+
+#Stopwörter 
+data("stopwords_en", package="lsa")
+
+stopwords_en <- data_frame(word = stopwords_en)
+
+# Für das Joinen werden gleiche Spaltennamen benötigt
+stopwords_en <- stopwords_en %>% 
+  rename(token = word)  
+
+SHIS %>% 
+    anti_join(stopwords_en) -> SHIS_F
+
+#Stemming
+SHIS_F %>% 
+  mutate(token_stem = wordStem(.$token, language = "en")) %>% 
+  count(token_stem, sort = TRUE) -> SHI_stemmed
+
+SHI_stemmed<- SHI_stemmed[-c(1),]
+
+wordcloud(words = SHI_stemmed$token_stem, 
+          freq = SHI_stemmed$n, 
+          max.words = 60, random.order=FALSE,
+          colors=brewer.pal(6, "Dark2"))
